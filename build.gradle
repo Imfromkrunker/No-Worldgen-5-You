@@ -1,34 +1,19 @@
 buildscript {
-
     repositories {
-    
-        jcenter()
-        
-        maven { 
-        
-            url = 'http://files.minecraftforge.net/maven'
-        }
-        
         maven {
-
-            url 'https://plugins.gradle.org/m2/'
+            name = "forge"
+            url = "https://maven.minecraftforge.net/"
         }
+        mavenCentral()
     }
-    
     dependencies {
-    
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
-        classpath 'gradle.plugin.com.matthewprenger:CurseGradle:1.1.0'
+        classpath ('com.anatawa12.forge:ForgeGradle:1.2-1.0.+') {
+            changing = true
+        }
     }
 }
 
-apply plugin: 'net.minecraftforge.gradle.forge'
-apply plugin: 'com.matthewprenger.cursegradle'
-apply plugin: 'maven-publish' 
-
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/generic/markdown-git-changelog.gradle'
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/minecraft/artifacts.gradle'
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/minecraft/maven.gradle'
+apply plugin: 'forge'
 
 version = "${mod_version}" + getBuildNumber()
 group = "${mod_group}"
@@ -44,7 +29,6 @@ minecraft {
     runDir = 'run'
     
     replace '@VERSION@', project.version
-    replace '@FINGERPRINT@', project.findProperty('signSHA1')
     replaceIn "${mod_class}.java"
 }
 
@@ -81,68 +65,3 @@ if (JavaVersion.current().isJava8Compatible()) {
         }
     }
 }
-
-curseforge {
-
-    apiKey = System.getenv('curse_auth') ? System.getenv('curse_auth') : 0 
-    def versions = "${curse_versions}".split(', ')
-
-    project {
-
-        id = "${curse_project}"
-        releaseType = 'alpha'
-        changelog = getGitChangelog
-        changelogType = 'markdown'
-
-        versions.each {
-
-            addGameVersion "${it}"
-        }
-
-        if (project.hasProperty('curse_requirements') || project.hasProperty('curse_optionals')) {
-
-            mainArtifact(jar) {
-
-                relations {
-
-                    if (project.hasProperty('curse_requirements')) {
-                        def requirements = "${curse_requirements}".split(', ')
-                        requirements.each {
-
-                            requiredLibrary "${it}"
-                        }
-                    }
-
-                    if (project.hasProperty('curse_optionals')) {
-                        def optionals = "${curse_optionals}".split(', ')
-                        optionals.each {
-
-                            optionalLibrary "${it}"
-                        }
-                    }
-                }
-            }
-        }
-
-        addArtifact(sourcesJar)
-        addArtifact(javadocJar)
-        addArtifact(deobfJar)
-    }
-}
-
-task signJar(type: SignJar, dependsOn: reobfJar) {
-
-    onlyIf {
-    
-        project.hasProperty('keyStore')
-    }
-    
-    keyStore = project.findProperty('keyStore')
-    alias = project.findProperty('keyStoreAlias')
-    storePass = project.findProperty('keyStorePass')
-    keyPass = project.findProperty('keyStoreKeyPass')
-    inputFile = jar.archivePath
-    outputFile = jar.archivePath
-}
-
-build.dependsOn signJar
